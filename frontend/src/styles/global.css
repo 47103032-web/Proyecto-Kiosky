@@ -1,0 +1,374 @@
+/* =====================================================================
+   KIOSKY - Hoja de estilos principal
+   RNF-01: interfaz intuitiva y simple, pensada para usuarios sin
+   conocimientos tecnicos. Layout responsive para uso en mostrador.
+   ===================================================================== */
+
+:root {
+  --color-fondo: #f4f6fb;
+  --color-panel: #ffffff;
+  --color-borde: #dfe3ec;
+  --color-texto: #1e2430;
+  --color-texto-suave: #6b7385;
+
+  --color-primario: #2f6fed;
+  --color-primario-oscuro: #2457c4;
+  --color-exito: #1f9d63;
+  --color-alerta: #d98a00;
+  --color-error: #d13d3d;
+
+  --radio: 10px;
+  --sombra: 0 1px 3px rgba(20, 30, 60, 0.08);
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: 15px;
+}
+
+h1, h2, h3 {
+  margin: 0 0 4px;
+  line-height: 1.25;
+}
+
+h1 { font-size: 1.55rem; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1rem; }
+
+a { color: var(--color-primario); }
+
+/* ------------------------------ Layout ----------------------------- */
+.layout {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #182233;
+  color: #cbd5e5;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar .marca {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.sidebar .marca span { color: #6fa0ff; }
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar nav a {
+  color: #cbd5e5;
+  text-decoration: none;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+
+.sidebar nav a:hover { background: #24314a; color: #fff; }
+.sidebar nav a.activo { background: var(--color-primario); color: #fff; }
+
+.sidebar .pie {
+  margin-top: auto;
+  border-top: 1px solid #2b3854;
+  padding-top: 14px;
+  font-size: 0.85rem;
+}
+
+.sidebar .pie .rol {
+  color: #8fa3c4;
+  text-transform: capitalize;
+}
+
+.contenido {
+  padding: 24px 28px 48px;
+  overflow-x: auto;
+}
+
+.encabezado-pagina {
+  margin-bottom: 18px;
+}
+
+.encabezado-pagina p {
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: 0.9rem;
+}
+
+/* ------------------------------ Paneles ---------------------------- */
+.panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.panel > h2 { margin-bottom: 12px; }
+
+.grilla {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* --------------------------- Indicadores --------------------------- */
+.indicador {
+  background: var(--color-panel);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 16px 18px;
+  box-shadow: var(--sombra);
+}
+
+.indicador .etiqueta {
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.indicador .valor {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.indicador.alerta .valor { color: var(--color-alerta); }
+.indicador.error .valor  { color: var(--color-error); }
+.indicador.exito .valor  { color: var(--color-exito); }
+
+/* ---------------------------- Formularios -------------------------- */
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--color-texto);
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+  color: var(--color-texto);
+}
+
+input:focus, select:focus {
+  outline: 2px solid rgba(47, 111, 237, 0.35);
+  border-color: var(--color-primario);
+}
+
+input.invalido, select.invalido { border-color: var(--color-error); }
+
+.campo { margin-bottom: 12px; }
+
+.campo .error-campo {
+  color: var(--color-error);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.fila-campos {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ------------------------------ Botones ---------------------------- */
+button {
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--color-primario);
+  color: #fff;
+}
+
+button:hover:not(:disabled) { background: var(--color-primario-oscuro); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+button.secundario {
+  background: #fff;
+  color: var(--color-texto);
+  border-color: var(--color-borde);
+}
+
+button.secundario:hover:not(:disabled) { background: #eef1f7; }
+
+button.peligro { background: var(--color-error); }
+button.peligro:hover:not(:disabled) { background: #b13232; }
+
+button.chico { padding: 5px 10px; font-size: 0.82rem; }
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ------------------------------ Tablas ----------------------------- */
+.tabla-contenedor { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--color-borde);
+  white-space: nowrap;
+}
+
+th {
+  color: var(--color-texto-suave);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+tbody tr:hover { background: #f7f9fd; }
+
+td.numero, th.numero { text-align: right; }
+
+.vacio {
+  text-align: center;
+  color: var(--color-texto-suave);
+  padding: 22px;
+}
+
+/* ---------------------------- Etiquetas ---------------------------- */
+.etiqueta {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.etiqueta.ok       { background: #e3f6ec; color: var(--color-exito); }
+.etiqueta.aviso    { background: #fdf1d9; color: var(--color-alerta); }
+.etiqueta.critica  { background: #fbe4e4; color: var(--color-error); }
+.etiqueta.neutra   { background: #eef1f7; color: var(--color-texto-suave); }
+
+/* ----------------------------- Mensajes ---------------------------- */
+.mensaje {
+  padding: 11px 14px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.mensaje.error {
+  background: #fbe4e4;
+  border-color: #f0bcbc;
+  color: #8f2626;
+}
+
+.mensaje.exito {
+  background: #e3f6ec;
+  border-color: #b5e3c9;
+  color: #14663f;
+}
+
+.mensaje.info {
+  background: #e7effd;
+  border-color: #c2d6f8;
+  color: #1f4694;
+}
+
+.mensaje ul { margin: 6px 0 0; padding-left: 18px; }
+
+/* ---------------------------- Login -------------------------------- */
+.pantalla-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: linear-gradient(160deg, #182233 0%, #24406e 100%);
+}
+
+.caja-login {
+  background: #fff;
+  width: 100%;
+  max-width: 380px;
+  padding: 30px 28px;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(10, 20, 45, 0.28);
+}
+
+.caja-login .marca {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.caja-login .marca span { color: var(--color-primario); }
+
+.caja-login .subtitulo {
+  text-align: center;
+  color: var(--color-texto-suave);
+  font-size: 0.86rem;
+  margin-bottom: 22px;
+}
+
+.caja-login button { width: 100%; margin-top: 6px; }
+
+.credenciales-demo {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-borde);
+  font-size: 0.8rem;
+  color: var(--color-texto-suave);
+  line-height: 1.6;
+}
+
+/* --------------------------- Responsive ---------------------------- */
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .sidebar nav { flex-direction: row; }
+  .sidebar .pie { margin-top: 0; border-top: none; padding-top: 0; }
+  .contenido { padding: 16px; }
+}
