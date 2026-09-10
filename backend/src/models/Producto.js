@@ -49,16 +49,20 @@ export class Producto {
     return this.stockActual <= this.stockMinimo;
   }
 
-  /** CU-03: la fecha de vencimiento ya paso. */
+  /**
+   * CU-03: la fecha de vencimiento ya paso.
+   * Un producto que vence hoy todavia puede venderse, por eso la
+   * comparacion es estricta.
+   */
   estaVencido(referencia = new Date()) {
     if (!this.fechaVencimiento) return false;
-    return new Date(this.fechaVencimiento) < soloFecha(referencia);
+    return aFechaLocal(this.fechaVencimiento) < soloFecha(referencia);
   }
 
   /** Vence dentro de los proximos `dias` (alerta del dashboard). */
   estaProximoAVencer(dias = 30, referencia = new Date()) {
     if (!this.fechaVencimiento) return false;
-    const vencimiento = new Date(this.fechaVencimiento);
+    const vencimiento = aFechaLocal(this.fechaVencimiento);
     const hoy = soloFecha(referencia);
     if (vencimiento < hoy) return false;
     const limite = new Date(hoy);
@@ -90,4 +94,17 @@ function soloFecha(fecha) {
   const d = new Date(fecha);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+/**
+ * Convierte una fecha 'AAAA-MM-DD' en medianoche LOCAL.
+ *
+ * new Date('2026-09-09') interpreta la cadena como medianoche UTC, mientras
+ * que soloFecha() devuelve medianoche local. Comparar ambas desplazaba el
+ * resultado segun la zona horaria y, en Argentina (UTC-3), marcaba como
+ * vencido un producto que vencia el mismo dia (defecto DEF-002).
+ */
+function aFechaLocal(valor) {
+  const [anio, mes, dia] = String(valor).slice(0, 10).split('-').map(Number);
+  return new Date(anio, mes - 1, dia);
 }
