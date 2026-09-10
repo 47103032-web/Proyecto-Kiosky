@@ -22,6 +22,8 @@
 - Verificacion de permisos segun el rol (propietario / empleado).
 - Verificacion de los mensajes que el sistema devuelve al usuario.
 - Comprobacion de las reglas de integridad del punto 12 del Entregable N2.
+- Pruebas automatizadas de los calculos, las reglas de negocio y los flujos
+  principales de los casos de uso (ver seccion 8).
 
 ### 1.2 Excluido
 
@@ -29,7 +31,6 @@
 |---|---|
 | Pruebas de carga y estres | Exceden el alcance de la materia; el sistema apunta a un unico comercio. |
 | Pruebas de seguridad ofensiva (penetration testing) | No forman parte de los requerimientos del proyecto. |
-| Pruebas automatizadas de regresion | No estan contempladas en la planificacion del Entregable N2. |
 | Compatibilidad con navegadores fuera del RNF-03 | El RNF-03 limita el soporte a Chrome, Edge y Firefox. |
 | Pruebas de usabilidad con usuarios finales | Requieren la participacion del cliente, prevista para la etapa de entrega. |
 
@@ -234,6 +235,7 @@ Responsable  : Integrante asignado.
 | ID | Fecha | Caso | Severidad | Descripcion | Estado | Responsable |
 |---|---|---|---|---|---|---|
 | DEF-001 | 01/09/2026 | CP-CU01-03 | Baja | La confirmacion por codigo de barras dependia unicamente del envio implicito del formulario al presionar Enter. Funciona en un navegador real, pero deja el comportamiento sujeto a una conducta implicita del navegador y dificulta verificarlo de forma automatizada. | Corregido | Aaron Brumat |
+| DEF-002 | 10/09/2026 | Pruebas automatizadas | Media | Un producto cuya fecha de vencimiento es el dia de hoy se informaba como ya vencido. Error de un dia en toda la logica de vencimientos, por comparar una fecha interpretada en UTC contra la medianoche local. | Corregido | Aaron Brumat |
 
 **Detalle de DEF-001**
 
@@ -258,7 +260,39 @@ Estado       : Corregido
 Responsable  : Aaron Brumat
 ```
 
-> No se registraron defectos de severidad Media, Alta ni Critica en la ronda
+**Detalle de DEF-002**
+
+```
+ID           : DEF-002
+Fecha        : 10/09/2026
+Caso         : Detectado por las pruebas automatizadas de dominio
+RF / CU      : CU-03 / alerta de vencimientos del dashboard
+Severidad    : Media
+Descripcion  : Un producto cuya fecha de vencimiento es el dia de hoy se
+               informaba como ya vencido, y ademas no figuraba entre los
+               proximos a vencer. Error de un dia en toda la logica.
+Causa        : new Date('AAAA-MM-DD') interpreta la cadena como medianoche
+               UTC, mientras que la fecha de referencia se construia como
+               medianoche local. En Argentina (UTC-3) el desfasaje de tres
+               horas hacia que la fecha de hoy comparara como anterior a hoy.
+Pasos        : 1. Cargar un producto con fecha de vencimiento igual a hoy.
+               2. Consultar el modulo de productos vencidos.
+Esperado     : El producto todavia puede venderse: no esta vencido.
+Obtenido     : Aparecia listado como vencido.
+Correccion   : Se agrego aFechaLocal(), que construye la fecha como
+               medianoche local, y se la usa en estaVencido() y en
+               estaProximoAVencer().
+Archivo      : backend/src/models/Producto.js
+Estado       : Corregido
+Responsable  : Aaron Brumat
+```
+
+> El juego de datos no incluia ningun producto que venciera exactamente hoy,
+> por eso las pruebas manuales no lo detectaron y los valores de referencia de
+> la seccion 4.1 no se ven afectados. Lo encontro la prueba automatizada de
+> valor limite sobre `estaVencido()`.
+
+> Ademas de DEF-002, no se registraron defectos de severidad Alta ni Critica en la ronda
 > de verificacion documentada en la seccion 7.
 
 ---
@@ -304,7 +338,56 @@ estado del sistema al momento de escribir esta documentacion.
 
 ---
 
-## 8. Trazabilidad
+## 8. Pruebas automatizadas
+
+Complementan a las pruebas manuales: automatizan los casos que no dependen de
+la interfaz, para poder repetirlos ante cualquier cambio sin volver a
+ejecutarlos a mano.
+
+### 8.1 Como ejecutarlas
+
+```
+cd backend
+npm test
+```
+
+No requieren MySQL ni dependencias adicionales: usan el runner incluido en
+Node y el repositorio en memoria, que carga el mismo juego de datos que
+`database/seed.sql`. El estado se reinicia antes de cada caso, de modo que
+ninguna prueba dependa del resultado de otra.
+
+### 8.2 Cobertura
+
+| Archivo | Que verifica | Casos |
+|---|---|---|
+| `tests/dominio.test.js` | Calculos y reglas de las clases de dominio: alerta de bajo stock, vencimientos, subtotales, total de venta y validacion de cantidad en bajas. | 24 |
+| `tests/ventas.test.js` | CU-01 completo: venta simple y multiple, descuento de stock, trazabilidad, stock insuficiente, producto inexistente, medio de pago inactivo y anulacion. | 13 |
+| `tests/stock.test.js` | CU-03 y RF-13: bajas por vencido y danado, cantidad invalida, alertas de inventario y transicion a bajo stock. | 13 |
+| `tests/reportes.test.js` | CU-04 y CU-05: totales por periodo, exclusion de ventas anuladas, rangos invalidos y ranking de mas vendidos. | 15 |
+| **Total** | | **65** |
+
+Resultado de la ultima ejecucion: **65 pruebas, 65 aprobadas, 0 fallidas**.
+
+### 8.3 Relacion con los casos manuales
+
+Cada prueba automatizada cita en su nombre el caso documentado que verifica
+(por ejemplo `CP-CU01-07` o `CP-RF13-02`), de modo que la trazabilidad entre
+el plan de pruebas y el codigo sea directa.
+
+Las pruebas automatizadas **no reemplazan** a los casos manuales: no cubren la
+interfaz, la experiencia de uso ni la compatibilidad entre navegadores, que
+siguen requiriendo ejecucion manual.
+
+### 8.4 Valor demostrado
+
+DEF-002 fue detectado por la prueba de valor limite sobre `estaVencido()`, no
+por las pruebas manuales. El juego de datos no contenia ningun producto que
+venciera exactamente el dia de la ejecucion, por lo que el error de un dia era
+invisible desde la interfaz.
+
+---
+
+## 9. Trazabilidad
 
 | Caso de uso | Requerimientos que cubre | Historia de usuario |
 |---|---|---|
