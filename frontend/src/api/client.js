@@ -3,7 +3,10 @@
  * Centraliza el token de sesion y la forma de los errores para que las
  * pantallas solo tengan que mostrar `error.message`.
  */
-const BASE = '/api';
+// En desarrollo, Vite redirige /api al backend local. En la demo publicada
+// el frontend y la API viven en dominios distintos, y la URL de la API se
+// fija al compilar con VITE_API_URL.
+const BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 let token = localStorage.getItem('kiosky_token');
 

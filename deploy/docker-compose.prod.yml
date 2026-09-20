@@ -1,0 +1,33 @@
+# API de Kiosky en el servidor compartido (EC2 us-east-2, 1 GB).
+#
+# Corre en modo memoria: no necesita base de datos y cada reinicio vuelve
+# al juego de datos inicial de database/seed.sql. Es una demostracion, no
+# un sistema con datos reales.
+#
+# Uso, desde la raiz del repositorio:
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
+
+services:
+  kiosky-api:
+    build: ../backend
+    container_name: kiosky-api
+    restart: unless-stopped
+
+    # Solo escucha en localhost: Caddy es quien la expone con TLS.
+    # 8000, 8001 y 8002 ya los usan Data Center, BarberApp y StockARG.
+    ports:
+      - "127.0.0.1:8003:4000"
+
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_MODE: memory
+      CORS_ORIGIN: https://kiosky.aaronbrumat.com.ar
+      # Obligatoria: si falta, compose se niega a levantar el contenedor.
+      # Nunca usar el valor de ejemplo de backend/.env.example.
+      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET en deploy/.env}
+
+    # La maquina tiene 1 GB compartido con otras tres apps y un PostgreSQL.
+    # La API en modo memoria usa menos de 80 MB; el limite evita que un
+    # error la haga crecer y tire abajo a las demas.
+    mem_limit: 160m
