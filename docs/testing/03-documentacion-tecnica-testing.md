@@ -236,6 +236,7 @@ Responsable  : Integrante asignado.
 |---|---|---|---|---|---|---|
 | DEF-001 | 01/09/2026 | CP-CU01-03 | Baja | La confirmacion por codigo de barras dependia unicamente del envio implicito del formulario al presionar Enter. Funciona en un navegador real, pero deja el comportamiento sujeto a una conducta implicita del navegador y dificulta verificarlo de forma automatizada. | Corregido | Aaron Brumat |
 | DEF-002 | 10/09/2026 | Pruebas automatizadas | Media | Un producto cuya fecha de vencimiento es el dia de hoy se informaba como ya vencido. Error de un dia en toda la logica de vencimientos, por comparar una fecha interpretada en UTC contra la medianoche local. | Corregido | Aaron Brumat |
+| DEF-003 | 20/09/2026 | Verificacion contra MySQL | Alta | Las ventas se guardan con el reloj del servidor de base de datos y los reportes se calculan con el reloj de la aplicacion. Si estan en zonas horarias distintas, el reporte del dia no incluye las ventas recientes. | Abierto | Elian Cavenatti |
 
 **Detalle de DEF-001**
 
@@ -294,6 +295,46 @@ Responsable  : Aaron Brumat
 
 > Ademas de DEF-002, no se registraron defectos de severidad Alta ni Critica en la ronda
 > de verificacion documentada en la seccion 7.
+
+**Detalle de DEF-003**
+
+```
+ID           : DEF-003
+Fecha        : 20/09/2026
+Caso         : Detectado al ejecutar el sistema contra MySQL por primera vez
+RF / CU      : RF-09 / CU-04, y el panel de ventas del dia del dashboard
+Severidad    : Alta
+Descripcion  : El reporte del dia no incluye las ventas registradas cuando el
+               servidor de base de datos y la aplicacion estan en zonas
+               horarias distintas.
+Causa        : Las ventas se guardan con NOW() del servidor de base de datos,
+               mientras que el periodo del reporte se calcula con la fecha
+               local del proceso de la aplicacion. Son dos relojes distintos.
+Pasos        : 1. Levantar MySQL en UTC y la aplicacion en Argentina (UTC-3).
+               2. Despues de las 21:00 hora local, registrar una venta.
+               3. Consultar el reporte con periodo "dia".
+Esperado     : La venta recien registrada aparece en el reporte del dia.
+Obtenido     : El reporte devuelve 0 ventas y un total de 0. La venta quedo
+               guardada con la fecha del dia siguiente.
+Evidencia    : Hora local 2026-09-20 21:11. La venta se guardo como
+               2026-09-21 00:11:40. El reporte del dia devolvio 0.
+Impacto      : Un kiosco que vende de noche veria "0 vendido hoy" en el
+               dashboard durante las ultimas horas de cada jornada, que son
+               justamente las de mayor venta.
+Alcance      : Solo afecta al modo MySQL. En modo memoria los datos y los
+               calculos viven en el mismo proceso, asi que comparten reloj.
+Sugerencia   : Unificar el reloj. La via mas directa es fijar la zona horaria
+               de la conexion a la base al abrir el pool, de modo que NOW() y
+               CURDATE() coincidan con la fecha local de la aplicacion.
+Estado       : Abierto
+Responsable  : Elian Cavenatti (reportes, KIO-05), a coordinar con Leonardo
+```
+
+> La suite automatizada no lo detecta porque corre contra el repositorio en
+> memoria, donde no hay dos relojes. La integracion continua tampoco: el
+> runner y el contenedor de MySQL corren los dos en UTC. Aparecio al ejecutar
+> el sistema por primera vez contra una base real desde una maquina en
+> Argentina.
 
 ---
 
