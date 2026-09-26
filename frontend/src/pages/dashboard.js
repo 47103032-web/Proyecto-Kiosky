@@ -1,80 +1,164 @@
 import React from 'react';
 
 const Dashboard = () => {
-  // Datos simulados (mock) para la vista
-  const ventasDelDia = 85450;
-  const stockBajo = [
-    { id: 1, nombre: 'Papas Fritas Clásicas 120g', stockActual: 2, stockMinimo: 10 },
-    { id: 2, nombre: 'Agua Mineral 500ml', stockActual: 5, stockMinimo: 12 }
+  // Datos simulados basados en el wireframe del proyecto
+  const metricas = {
+    ventasDia: 85450,
+    ventasSemana: 512300,
+    productosTotales: 652,
+    clientesRegistrados: 248,
+  };
+
+  const alertasStockBajo = [
+    { id: 1, nombre: 'Guaraná Cola 2.25L', stockActual: 3, stockMinimo: 10 },
+    { id: 2, nombre: 'Agua Mineral 500ml', stockActual: 5, stockMinimo: 12 },
+    { id: 3, nombre: 'Papas Fritas Clásicas', stockActual: 2, stockMinimo: 6 },
   ];
-  const proximosVencer = [
-    { id: 1, nombre: 'Leche Entera 1L', fecha: '15/09/2026', diasRestantes: 2 },
-    { id: 2, nombre: 'Yogur Frutilla 200g', fecha: '18/09/2026', diasRestantes: 5 }
+
+  const alertasVencimiento = [
+    { id: 1, nombre: 'Leche Entera 1L', vencimiento: '15/08/2026', diasRestantes: 7 },
+    { id: 2, nombre: 'Yogur Frutilla', vencimiento: '12/08/2026', diasRestantes: 4 },
+    { id: 3, nombre: 'Queso Cremoso 200g', vencimiento: '10/08/2026', diasRestantes: 2 },
   ];
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Dashboard</h1>
+      <header className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-gray-500">Resumen general de tu negocio</p>
+        </div>
+        <div className="text-sm text-gray-500">08 de agosto de 2026</div>
+      </header>
 
-      {/* Accesos Rápidos */}
+      {/* Tarjetas de Resumen General */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <button className="bg-blue-600 text-white p-4 rounded-lg shadow hover:bg-blue-700 transition">
-          🛒 Nueva Venta
-        </button>
-        <button className="bg-green-600 text-white p-4 rounded-lg shadow hover:bg-green-700 transition">
-          📦 Agregar Producto
-        </button>
-        <button className="bg-purple-600 text-white p-4 rounded-lg shadow hover:bg-purple-700 transition">
-          📊 Reporte de Ventas
-        </button>
-        <button className="bg-red-600 text-white p-4 rounded-lg shadow hover:bg-red-700 transition">
-          ⚠️ Productos Vencidos
-        </button>
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="text-gray-500 text-sm">Ventas del día</h3>
+          <p className="text-2xl font-bold">${metricas.ventasDia.toLocaleString('es-AR')}</p>
+          <span className="text-green-500 text-xs">↗ 12% vs ayer</span>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="text-gray-500 text-sm">Ventas de la semana</h3>
+          <p className="text-2xl font-bold">${metricas.ventasSemana.toLocaleString('es-AR')}</p>
+          <span className="text-green-500 text-xs">↗ 8% vs semana pasada</span>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="text-gray-500 text-sm">Productos totales</h3>
+          <p className="text-2xl font-bold">{metricas.productosTotales}</p>
+          <span className="text-gray-400 text-xs">— sin cambios</span>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="text-gray-500 text-sm">Clientes registrados</h3>
+          <p className="text-2xl font-bold">{metricas.clientesRegistrados}</p>
+          <span className="text-red-500 text-xs">↘ 5% vs mes pasado</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Tarjeta de Ventas del Día */}
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-          <h2 className="text-lg font-semibold text-gray-600 mb-2">Ventas del Día</h2>
-          <p className="text-4xl font-bold text-gray-800">${ventasDelDia.toLocaleString()}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-8">
+        {/* Columna Izquierda: Gráfico y Vencimientos */}
+        <div>
+          {/* Contenedor del Gráfico de Ventas del Día */}
+          <div className="bg-white p-4 rounded shadow mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold">Ventas del día</h3>
+              <select className="border text-sm p-1 rounded"><option>Hoy</option></select>
+            </div>
+            <div className="h-48 bg-gray-100 flex items-center justify-center text-gray-400 rounded">
+              {/* Aquí iría el componente del gráfico (ej. Recharts o Chart.js) */}
+              [Gráfico de líneas]
+            </div>
+          </div>
 
-        {/* Tarjeta de Stock Bajo */}
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
-          <h2 className="text-lg font-semibold text-gray-600 mb-4">Productos con Stock Bajo</h2>
-          <ul className="divide-y divide-gray-200">
-            {stockBajo.map(prod => (
-              <li key={prod.id} className="py-2 flex justify-between items-center">
-                <span className="text-gray-700">{prod.nombre}</span>
-                <span className="bg-yellow-100 text-yellow-800 py-1 px-3 rounded-full text-sm font-medium">
-                  {prod.stockActual} / {prod.stockMinimo}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Tarjeta de Próximos a Vencer */}
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500 md:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-600 mb-4">Productos Próximos a Vencer</h2>
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-500 border-b">
-                <th className="pb-2">Producto</th>
-                <th className="pb-2">Vencimiento</th>
-                <th className="pb-2 text-right">Días Restantes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {proximosVencer.map(prod => (
-                <tr key={prod.id} className="border-b last:border-0">
-                  <td className="py-3 text-gray-800">{prod.nombre}</td>
-                  <td className="py-3 text-gray-600">{prod.fecha}</td>
-                  <td className="py-3 text-right text-red-600 font-bold">{prod.diasRestantes} días</td>
+          {/* Alertas: Productos próximos a vencer */}
+          <div className="bg-white p-4 rounded shadow">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold">Productos próximos a vencer</h3>
+              <button className="text-blue-500 text-sm">Ver todos</button>
+            </div>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-gray-500 border-b">
+                  <th className="pb-2">Producto</th>
+                  <th className="pb-2">Vencimiento</th>
+                  <th className="pb-2">Días restantes</th>
+                  <th className="pb-2">Acción</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {alertasVencimiento.map((prod) => (
+                  <tr key={prod.id} className="border-b last:border-0">
+                    <td className="py-2">{prod.nombre}</td>
+                    <td className="py-2">{prod.vencimiento}</td>
+                    <td className="py-2 text-red-500">{prod.diasRestantes} días</td>
+                    <td className="py-2"><button className="border px-2 py-1 rounded text-xs">Ver</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Columna Derecha: Stock Bajo y Accesos Rápidos */}
+        <div>
+          {/* Alertas: Productos con stock bajo */}
+          <div className="bg-white p-4 rounded shadow mb-8 border-l-4 border-yellow-500">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold">Productos con stock bajo</h3>
+              <button className="text-blue-500 text-sm">Ver todos</button>
+            </div>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-gray-500 border-b">
+                  <th className="pb-2">Producto</th>
+                  <th className="pb-2">Stock actual</th>
+                  <th className="pb-2">Stock mínimo</th>
+                  <th className="pb-2">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {alertasStockBajo.map((prod) => (
+                  <tr key={prod.id} className="border-b last:border-0">
+                    <td className="py-2">{prod.nombre}</td>
+                    <td className="py-2 font-bold text-red-500">{prod.stockActual}</td>
+                    <td className="py-2 text-gray-500">{prod.stockMinimo}</td>
+                    <td className="py-2"><button className="border px-2 py-1 rounded text-xs">Ver</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Accesos Rápidos */}
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-bold mb-4">Accesos rápidos</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <button className="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50">
+                <span className="text-2xl mb-2">🛒</span>
+                <span className="text-xs">Nueva venta</span>
+              </button>
+              <button className="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50">
+                <span className="text-2xl mb-2">📦</span>
+                <span className="text-xs">Agregar producto</span>
+              </button>
+              <button className="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50">
+                <span className="text-2xl mb-2">👤</span>
+                <span className="text-xs">Nuevo cliente</span>
+              </button>
+              <button className="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50">
+                <span className="text-2xl mb-2">📊</span>
+                <span className="text-xs">Reporte de ventas</span>
+              </button>
+              <button className="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50">
+                <span className="text-2xl mb-2">⚠️</span>
+                <span className="text-xs">Stock bajo</span>
+              </button>
+              <button className="flex flex-col items-center justify-center p-4 border rounded hover:bg-gray-50">
+                <span className="text-2xl mb-2">🗑️</span>
+                <span className="text-xs">Productos vencidos</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -82,3 +166,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
