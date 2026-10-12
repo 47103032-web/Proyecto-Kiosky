@@ -13,11 +13,12 @@ import * as VentaController from '../controllers/VentaController.js';
 import * as StockController from '../controllers/StockController.js';
 import * as ReporteController from '../controllers/ReporteController.js';
 import { requiereAutenticacion, requiereRol } from '../middleware/auth.js';
+import { limitarIntentosDeIngreso } from '../middleware/limiteIntentos.js';
 
 export const router = Router();
 
 // ------------------------------ RF-01 --------------------------------
-router.post('/auth/login', AuthController.login);
+router.post('/auth/login', limitarIntentosDeIngreso, AuthController.login);
 router.get('/auth/perfil', requiereAutenticacion, AuthController.perfil);
 
 // A partir de aqui, todo exige sesion iniciada.

@@ -28,6 +28,18 @@ export const errorProhibido = (mensaje = 'No posee permisos para esta operacion.
 export const errorConflicto = (mensaje) =>
   new AppError(mensaje, 409, 'CONFLICTO');
 
+/**
+ * Sesion vencida o token invalido.
+ *
+ * Lleva un codigo propio para que el frontend pueda distinguirla de unas
+ * credenciales incorrectas, que tambien responden 401. Sin esa distincion,
+ * redirigir al login ante cualquier 401 romperia el mensaje de "usuario o
+ * contrasena incorrectos" de la propia pantalla de ingreso.
+ */
+export const errorSesionVencida = (
+  mensaje = 'La sesion expiro. Vuelva a iniciar sesion.'
+) => new AppError(mensaje, 401, 'SESION_VENCIDA');
+
 /** Stock insuficiente: caso negativo central de CU-01 (FA-1). */
 export const errorStockInsuficiente = (producto, solicitado, disponible) =>
   new AppError(

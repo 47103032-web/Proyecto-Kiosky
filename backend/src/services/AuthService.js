@@ -6,7 +6,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env.js';
 import { getRepositorios } from '../repositories/index.js';
-import { errorNoAutorizado, errorValidacion } from '../utils/errors.js';
+import {
+  errorNoAutorizado,
+  errorSesionVencida,
+  errorValidacion,
+} from '../utils/errors.js';
+import { limpiarIntentos, registrarFallo } from '../middleware/limiteIntentos.js';
 
 /**
  * Valida las credenciales y devuelve el usuario si son correctas.
@@ -37,7 +42,16 @@ export async function login(email, password) {
     });
   }
 
-  const usuario = await validarCredenciales(email, password);
+  // Un intento fallido alimenta el limite por email (AUD-10); uno correcto
+  // libera la cuenta, para no castigar a quien se equivoco y despues acerto.
+  let usuario;
+  try {
+    usuario = await validarCredenciales(email, password);
+  } catch (error) {
+    registrarFallo(email);
+    throw error;
+  }
+  limpiarIntentos(email);
 
   const token = jwt.sign(
     { id: usuario.id, email: usuario.email, rol: usuario.rol },
@@ -53,6 +67,6 @@ export function verificarToken(token) {
   try {
     return jwt.verify(token, config.jwtSecret);
   } catch {
-    throw errorNoAutorizado('Sesion invalida o expirada.');
+    throw errorSesionVencida();
   }
 }

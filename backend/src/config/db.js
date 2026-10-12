@@ -2,6 +2,19 @@ import mysql from 'mysql2/promise';
 import { config } from './env.js';
 
 /**
+ * Desfasaje horario local en el formato que espera MySQL, por ejemplo
+ * '-03:00' para Argentina.
+ */
+function desfasajeHorarioLocal(referencia = new Date()) {
+  const minutos = -referencia.getTimezoneOffset();
+  const signo = minutos < 0 ? '-' : '+';
+  const abs = Math.abs(minutos);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `${signo}${hh}:${mm}`;
+}
+
+/**
  * Estado de la conexion resuelto en el arranque.
  *   mode: 'mysql' | 'memory'
  *   pool: pool de mysql2 cuando mode === 'mysql', null en caso contrario
@@ -34,6 +47,15 @@ export async function inicializarBaseDeDatos() {
       dateStrings: true,
       // Necesario para que las transacciones de venta sean atomicas
       multipleStatements: false,
+    });
+
+    // DEF-003: las ventas se guardan con NOW() del servidor de base de datos
+    // y los periodos de los reportes se calculan con la fecha local de este
+    // proceso. Si los relojes no coinciden, el reporte del dia deja afuera las
+    // ventas recientes. Se alinea la zona horaria de cada conexion con la de
+    // la aplicacion para que ambos lados usen el mismo dia.
+    pool.on('connection', (conexion) => {
+      conexion.query('SET time_zone = ?', [desfasajeHorarioLocal()]);
     });
 
     const conexion = await pool.getConnection();

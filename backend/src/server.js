@@ -5,12 +5,15 @@
  * despues levanta el servidor HTTP, de modo que los repositorios queden
  * inicializados antes de atender la primera peticion.
  */
-import { config } from './config/env.js';
+import { config, validarSecretoDeSesion } from './config/env.js';
 import { inicializarBaseDeDatos } from './config/db.js';
 import { inicializarRepositorios } from './repositories/index.js';
 import { crearApp } from './app.js';
 
 async function iniciar() {
+  // Antes que nada: en produccion no se arranca con un secreto debil.
+  validarSecretoDeSesion();
+
   const { mode } = await inicializarBaseDeDatos();
   inicializarRepositorios();
 
