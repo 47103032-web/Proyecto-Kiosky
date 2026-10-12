@@ -1,25 +1,28 @@
-# Despliegue de la demo
+# Despliegue de la demo privada
 
-Kiosky se publica como demostracion para la presentacion, con el mismo
-esquema que StockARG: la API en la EC2 compartida y el frontend en
-Cloudflare Workers.
+Kiosky se publica como demostracion para la defensa del proyecto. **No es un
+sitio publico**: todo el dominio esta detras de usuario y contrasena, y lleva
+`X-Robots-Tag: noindex` para que no lo indexen los buscadores.
 
 ```
-navegador -> kiosky.aaronbrumat.com.ar      (Cloudflare Workers, archivos estaticos)
-          -> api-kiosky.aaronbrumat.com.ar  (Caddy, TLS)
-                -> 127.0.0.1:8003 -> contenedor kiosky-api (modo memoria)
+navegador -> kiosky.aaronbrumat.com.ar  (Caddy, TLS + usuario y contrasena)
+                |
+                +-- /api/*  -> 127.0.0.1:8003 -> contenedor kiosky-api
+                +-- resto   -> /var/www/kiosky (frontend compilado)
 ```
 
-## Por que en modo memoria
+El frontend y la API comparten dominio. Eso evita el problema de pedir
+credenciales en peticiones entre origenes distintos, y de paso elimina CORS.
+
+## Por que corre en modo memoria
 
 La EC2 tiene 1 GB compartido entre Data Center, BarberApp, StockARG y un
 PostgreSQL. Un MySQL sumaria unos 400 MB y pondria en riesgo a las demas.
 
 En modo memoria la API no necesita base de datos: carga el mismo juego de
-datos que `database/seed.sql` y vuelve a el en cada reinicio. Para una demo
-es lo que conviene, porque siempre arranca en un estado conocido. El codigo
-sigue soportando MySQL tal cual lo define la documentacion; el modo se elige
-con `DB_MODE`.
+datos que `database/seed.sql` y vuelve a el en cada reinicio, asi que la demo
+siempre arranca en un estado conocido. El codigo sigue soportando MySQL tal
+cual lo define la documentacion; el modo se elige con `DB_MODE`.
 
 La interfaz lo avisa en pantalla: el aviso de modo demostracion aparece solo
 cuando el backend informa que corre en memoria.
@@ -32,66 +35,70 @@ Una sola vez, en la EC2:
 git clone https://github.com/47103032-web/Proyecto-Kiosky.git ~/kiosky
 cd ~/kiosky
 cp deploy/.env.example deploy/.env
-```
-
-Generar el secreto y pegarlo en `deploy/.env`:
-
-```bash
-openssl rand -hex 32
-```
-
-Levantar el contenedor:
-
-```bash
+openssl rand -hex 32      # pegar el resultado en deploy/.env
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
+curl http://127.0.0.1:8003/api/salud      # debe decir "base_de_datos":"memory"
 ```
 
-Si `JWT_SECRET` esta vacio, compose se niega a arrancar. Es a proposito.
+Si `JWT_SECRET` esta vacio, compose se niega a arrancar. Es a proposito: el
+backend tambien rechaza arrancar en produccion con un secreto debil.
 
-Verificar que responde:
+## 2. Frontend
+
+Se compila en la maquina de desarrollo y se copia al servidor. Como el
+frontend y la API comparten dominio, no hace falta configurar ninguna URL:
 
 ```bash
-curl http://127.0.0.1:8003/api/salud
+cd frontend
+npm run build
+scp -r dist/* usuario@servidor:/var/www/kiosky/
 ```
 
-Tiene que devolver `"base_de_datos":"memory"`.
+## 3. Caddy
 
-## 2. Caddy
+Generar el hash de la contrasena **en el servidor**:
 
-Agregar el bloque de [deploy/Caddyfile.fragmento](deploy/Caddyfile.fragmento)
-al final de `/etc/caddy/Caddyfile`, validar y recargar:
+```bash
+caddy hash-password
+```
+
+Pegar ese hash en [deploy/Caddyfile.fragmento](deploy/Caddyfile.fragmento),
+agregar el bloque al final de `/etc/caddy/Caddyfile`, validar y recargar:
 
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
 ```
 
-En el DNS, `api-kiosky` apunta a la IP de la EC2, igual que `api-stockarg`.
+En el DNS, `kiosky` apunta a la IP de la EC2, igual que `api-stockarg`.
 
-## 3. Frontend en Cloudflare
-
-Desde `frontend/`, compilando con la URL publica de la API:
+## 4. Comprobar que quedo privada
 
 ```bash
-VITE_API_URL=https://api-kiosky.aaronbrumat.com.ar/api npm run build
-npx wrangler deploy
+curl -I https://kiosky.aaronbrumat.com.ar                        # 401
+curl -I -u profesor:LACLAVE https://kiosky.aaronbrumat.com.ar    # 200
 ```
 
-`wrangler.jsonc` ya declara el dominio `kiosky.aaronbrumat.com.ar` y hace que
-cualquier ruta devuelva `index.html`, que es lo que necesita React Router.
+Si la primera responde 200, el bloque de `basic_auth` no se aplico.
 
-## 4. Actualizar la demo
-
-Despues de cada cambio en `main`:
+## 5. Actualizar la demo
 
 ```bash
 cd ~/kiosky && git pull
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
 ```
 
-Y volver a publicar el frontend si cambio algo en `frontend/`.
+Y volver a copiar `frontend/dist` si cambio algo del frontend.
 
 ## Recursos
 
 La API en memoria usa unos 22 MB. El contenedor tiene un limite de 160 MB
 para que un error no la haga crecer y afecte a las otras aplicaciones.
+
+## Si alguna vez se publica
+
+`frontend/wrangler.jsonc` quedo preparado para servir el frontend desde
+Cloudflare Workers, como hace StockARG. En ese caso el frontend y la API
+pasan a vivir en dominios distintos: hay que compilar con `VITE_API_URL`
+apuntando a la API y quitar el `basic_auth`, porque no funciona bien con
+peticiones entre origenes.

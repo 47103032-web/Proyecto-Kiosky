@@ -22,6 +22,8 @@ services:
       NODE_ENV: production
       PORT: 4000
       DB_MODE: memory
+      # Frontend y API comparten dominio, asi que no hay peticiones entre
+      # origenes. Se declara igual por si alguna vez se separan.
       CORS_ORIGIN: https://kiosky.aaronbrumat.com.ar
       # Obligatoria: si falta, compose se niega a levantar el contenedor.
       # Nunca usar el valor de ejemplo de backend/.env.example.
