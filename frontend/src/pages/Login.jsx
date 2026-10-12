@@ -17,6 +17,10 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
+  // Lo deja el cliente HTTP al expulsar por sesion vencida.
+  const porSesionVencida =
+    new URLSearchParams(window.location.search).get('vencida') === '1';
+
   if (cargando) return <div style={{ padding: 40 }}>Cargando...</div>;
   if (usuario) return <Navigate to="/" replace />;
 
@@ -48,6 +52,13 @@ export default function Login() {
           KIOS<span>KY</span>
         </div>
         <p className="subtitulo">Gestion integral de kioscos</p>
+
+        {porSesionVencida && !error && (
+          <Mensaje
+            tipo="info"
+            texto="Tu sesion expiro por inactividad. Volve a ingresar."
+          />
+        )}
 
         <Mensaje tipo="error" texto={error?.mensaje} detalles={error?.detalles} />
 

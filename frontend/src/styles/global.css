@@ -183,6 +183,22 @@ input:focus, select:focus {
   border-color: var(--color-primario);
 }
 
+/* AUD-16: quien navega con teclado necesita ver siempre donde esta parado.
+   Antes solo los campos de texto mostraban el foco: los botones y los
+   enlaces del menu lateral quedaban sin ninguna marca visible. */
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.sidebar nav a:focus-visible {
+  outline-color: #fff;
+}
+
 input.invalido, select.invalido { border-color: var(--color-error); }
 
 .campo { margin-bottom: 12px; }

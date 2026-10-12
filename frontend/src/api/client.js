@@ -26,6 +26,28 @@ export class ApiError extends Error {
   }
 }
 
+// En la pantalla de ingreso, un 401 significa "datos incorrectos", no una
+// sesion vencida. Si no se excluyera, el usuario que escribe mal la
+// contrasena seria expulsado al login en vez de leer el mensaje de error.
+// El patron viene de StockARG (frontend/src/lib/api.ts).
+const RUTAS_DE_INGRESO = ['/auth/login'];
+
+/**
+ * Si la sesion vencio en medio del uso, cada pantalla mostraria un error sin
+ * salida. Se limpia la sesion y se vuelve al ingreso avisando por que.
+ * Devuelve true si se encargo de la respuesta.
+ */
+function atenderSesionVencida(ruta, cuerpo) {
+  if (cuerpo?.codigo !== 'SESION_VENCIDA') return false;
+  if (RUTAS_DE_INGRESO.some((r) => ruta.startsWith(r))) return false;
+  if (typeof window === 'undefined') return false;
+
+  guardarToken(null);
+  // replace y no href: la pantalla vencida no queda en el historial.
+  window.location.replace('/login?vencida=1');
+  return true;
+}
+
 async function peticion(ruta, opciones = {}) {
   const cabeceras = { ...(opciones.headers ?? {}) };
   if (opciones.body) cabeceras['Content-Type'] = 'application/json';
@@ -44,6 +66,11 @@ async function peticion(ruta, opciones = {}) {
   const cuerpo = await respuesta.json().catch(() => ({}));
 
   if (!respuesta.ok) {
+    if (atenderSesionVencida(ruta, cuerpo)) {
+      // La redireccion ya esta en marcha: no tiene sentido que las pantallas
+      // muestren un error que el usuario no va a llegar a leer.
+      return new Promise(() => {});
+    }
     throw new ApiError(
       cuerpo.mensaje ?? 'Ocurrio un error inesperado.',
       cuerpo.codigo ?? 'ERROR',
