@@ -1,0 +1,132 @@
+# Integracion continua de Kiosky (ticket KIO-08).
+#
+# Corre en cada push y en cada pull request, para que un cambio que rompa
+# algo se detecte al abrir el PR y no en la demostracion.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  pruebas:
+    name: Pruebas del backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: npm ci
+
+      - name: Ejecutar las pruebas
+        working-directory: backend
+        run: npm test
+
+  frontend:
+    name: El frontend compila
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: Compilar
+        working-directory: frontend
+        run: npm run build
+
+  base-de-datos:
+    name: El sistema funciona contra MySQL
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: kiosky_ci
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -p$MYSQL_ROOT_PASSWORD"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # Si el esquema no aplica sobre una base vacia, falla aca. Es el error
+      # clasico: el SQL anda en la maquina de quien lo escribio y en ninguna otra.
+      - name: El esquema aplica sobre una base vacia
+        run: mysql -h 127.0.0.1 -u root -pkiosky_ci < database/schema.sql
+
+      - name: Los datos de prueba cargan
+        run: mysql -h 127.0.0.1 -u root -pkiosky_ci < database/seed.sql
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: npm ci
+
+      - name: Levantar la API contra MySQL
+        working-directory: backend
+        env:
+          DB_MODE: mysql
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASSWORD: kiosky_ci
+          DB_NAME: kiosky
+          JWT_SECRET: secreto-solo-para-la-integracion-continua-32
+        run: |
+          node src/server.js &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:4000/api/salud > /dev/null && break
+            sleep 1
+          done
+
+      # Comprueba que la API este usando MySQL y no el repositorio en memoria:
+      # sin esto, el trabajo pasaria aunque la conexion hubiera fallado.
+      - name: La API responde y esta usando MySQL
+        run: |
+          motor=$(curl -sf http://127.0.0.1:4000/api/salud | sed -n 's/.*"base_de_datos":"\([a-z]*\)".*/\1/p')
+          echo "Motor en uso: $motor"
+          test "$motor" = "mysql"
+
+      # Este paso es el que detecta que el esquema y el backend no coinciden:
+      # si a una tabla le falta una columna que las consultas usan, falla aca.
+      #
+      # Lo que este trabajo NO puede detectar es DEF-003: el runner y el
+      # contenedor de MySQL corren los dos en UTC, asi que sus relojes
+      # coinciden y el desfasaje no aparece. Para reproducirlo hace falta
+      # una base en una zona horaria distinta a la de la aplicacion.
+      - name: El listado de productos funciona contra el esquema real
+        run: |
+          token=$(curl -sf -X POST http://127.0.0.1:4000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"propietario@kiosky.com","password":"Kiosky2026"}' \
+            | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+          test -n "$token"
+          total=$(curl -sf http://127.0.0.1:4000/api/productos \
+            -H "Authorization: Bearer $token" \
+            | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
+          echo "Productos devueltos: $total"
+          test "$total" = "12"
