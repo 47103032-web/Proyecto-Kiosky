@@ -1,0 +1,43 @@
+# Bloque para /etc/caddy/Caddyfile del servidor.
+#
+# La demo de Kiosky es privada: sirve para que el profesor la revise, no para
+# publicarla. Todo el sitio queda detras de usuario y contrasena, y el
+# frontend y la API viven en el mismo dominio, de modo que no hay CORS y el
+# navegador pide las credenciales una sola vez.
+#
+# Caddy resuelve el certificado solo. La API escucha en 127.0.0.1:8003 y
+# nunca queda expuesta de forma directa.
+
+kiosky.aaronbrumat.com.ar {
+	encode zstd gzip
+
+	# Usuario y contrasena para todo el sitio, incluida la API.
+	# El hash se genera en el servidor con:
+	#     caddy hash-password
+	# y se pega abajo reemplazando el valor de ejemplo.
+	basic_auth {
+		profesor REEMPLAZAR_POR_EL_HASH_QUE_GENERE_CADDY
+	}
+
+	# La API, en el mismo origen que el frontend.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8003
+	}
+
+	# El frontend compilado. Cualquier ruta que no sea un archivo devuelve
+	# index.html para que React Router la resuelva.
+	handle {
+		root * /var/www/kiosky
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Que no quede indexada por buscadores.
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+}

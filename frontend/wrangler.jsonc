@@ -1,0 +1,20 @@
+// Frontend de Kiosky en Cloudflare Workers, como el de StockARG.
+//
+// Es una SPA estatica: no hay codigo de servidor, solo los archivos que
+// genera `npm run build`. Cualquier ruta que no sea un archivo (por ejemplo
+// /productos o /venta) devuelve index.html y React Router la resuelve.
+//
+// Publicar, desde frontend/:
+//   VITE_API_URL=https://api-kiosky.aaronbrumat.com.ar/api npm run build
+//   npx wrangler deploy
+{
+  "name": "kiosky",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    { "pattern": "kiosky.aaronbrumat.com.ar", "custom_domain": true }
+  ]
+}

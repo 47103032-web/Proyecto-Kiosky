@@ -372,3 +372,13 @@ td.numero, th.numero { text-align: right; }
   .sidebar .pie { margin-top: 0; border-top: none; padding-top: 0; }
   .contenido { padding: 16px; }
 }
+
+/* --------------------------- Aviso de demo ------------------------- */
+.aviso-demo {
+  background: #fdf1d9;
+  color: #6b4a00;
+  border-bottom: 1px solid #f0d9a8;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  text-align: center;
+}
