@@ -1,3 +1,4 @@
+
 import mysql from 'mysql2/promise';
 import { config } from './env.js';
 
@@ -29,6 +30,7 @@ export async function inicializarBaseDeDatos() {
       user: config.db.user,
       password: config.db.password,
       database: config.db.database,
+      timezone: config.db.timezone,
       waitForConnections: true,
       connectionLimit: 10,
       dateStrings: true,
@@ -45,7 +47,7 @@ export async function inicializarBaseDeDatos() {
   } catch (error) {
     if (config.db.mode === 'mysql') {
       throw new Error(
-        `No se pudo conectar a MySQL (${config.db.host}:${config.db.port}/${config.db.database}): ${error.message}`
+        No se pudo conectar a MySQL (${config.db.host}:${config.db.port}/${config.db.database}): ${error.message}
       );
     }
 

@@ -1,5 +1,10 @@
 import 'dotenv/config';
 
+const dbTimezone = process.env.DB_TIMEZONE ?? process.env.TZ ?? 'local';
+if (!process.env.TZ && dbTimezone !== 'local') {
+  process.env.TZ = dbTimezone;
+}
+
 /**
  * Configuracion central del backend.
  * Todos los valores tienen un default razonable para que el sistema
@@ -22,6 +27,7 @@ export const config = {
     user: process.env.DB_USER ?? 'root',
     password: process.env.DB_PASSWORD ?? '',
     database: process.env.DB_NAME ?? 'kiosky',
+    timezone: dbTimezone,
   },
 
   // RF-13 / dashboard: ventana para la alerta de vencimiento proximo
