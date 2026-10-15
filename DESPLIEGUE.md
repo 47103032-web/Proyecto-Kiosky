@@ -1,104 +1,111 @@
-# Despliegue de la demo privada
+# Puesta en marcha de Kiosky
 
-Kiosky se publica como demostracion para la defensa del proyecto. **No es un
-sitio publico**: todo el dominio esta detras de usuario y contrasena, y lleva
-`X-Robots-Tag: noindex` para que no lo indexen los buscadores.
+El sistema se ejecuta en una computadora, abriendo el proyecto en Visual Studio
+Code. Son dos procesos que corren a la vez:
 
 ```
-navegador -> kiosky.aaronbrumat.com.ar  (Caddy, TLS + usuario y contrasena)
-                |
-                +-- /api/*  -> 127.0.0.1:8003 -> contenedor kiosky-api
-                +-- resto   -> /var/www/kiosky (frontend compilado)
+navegador  ->  frontend (Vite, puerto 5173)
+                   |
+                   +--  /api/*  ->  backend (Express, puerto 3000)
+                                        |
+                                        +--  MySQL 8, o juego de datos en memoria
 ```
 
-El frontend y la API comparten dominio. Eso evita el problema de pedir
-credenciales en peticiones entre origenes distintos, y de paso elimina CORS.
+El servidor de desarrollo del frontend redirige al backend todas las peticiones
+cuya direccion empieza con `/api`, de modo que para el navegador ambos conviven
+en el mismo origen y no hay que configurar nada.
 
-## Por que corre en modo memoria
+## Requisitos
 
-La EC2 tiene 1 GB compartido entre Data Center, BarberApp, StockARG y un
-PostgreSQL. Un MySQL sumaria unos 400 MB y pondria en riesgo a las demas.
+- Node.js 20 o superior.
+- Un navegador con soporte vigente.
+- MySQL 8 **solo si** se quiere trabajar con persistencia. El sistema funciona
+  sin el.
 
-En modo memoria la API no necesita base de datos: carga el mismo juego de
-datos que `database/seed.sql` y vuelve a el en cada reinicio, asi que la demo
-siempre arranca en un estado conocido. El codigo sigue soportando MySQL tal
-cual lo define la documentacion; el modo se elige con `DB_MODE`.
-
-La interfaz lo avisa en pantalla: el aviso de modo demostracion aparece solo
-cuando el backend informa que corre en memoria.
-
-## 1. API en el servidor
-
-Una sola vez, en la EC2:
+## 1. Backend
 
 ```bash
-git clone https://github.com/47103032-web/Proyecto-Kiosky.git ~/kiosky
-cd ~/kiosky
-cp deploy/.env.example deploy/.env
-openssl rand -hex 32      # pegar el resultado en deploy/.env
-docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
-curl http://127.0.0.1:8003/api/salud      # debe decir "base_de_datos":"memory"
+cd backend
+npm install
+npm run dev
 ```
 
-Si `JWT_SECRET` esta vacio, compose se niega a arrancar. Es a proposito: el
-backend tambien rechaza arrancar en produccion con un secreto debil.
+Queda escuchando en `http://localhost:3000`. Para comprobar contra que motor
+arranco:
+
+```bash
+curl http://localhost:3000/api/salud
+```
+
+Si no encuentra una base de datos disponible, continua con el juego de datos de
+`database/seed.sql` cargado en memoria y lo avisa por consola. Eso es
+intencional: el sistema arranca sin configuracion previa.
 
 ## 2. Frontend
 
-Se compila en la maquina de desarrollo y se copia al servidor. Como el
-frontend y la API comparten dominio, no hace falta configurar ninguna URL:
+En una **segunda** terminal:
 
 ```bash
 cd frontend
-npm run build
-scp -r dist/* usuario@servidor:/var/www/kiosky/
+npm install
+npm run dev
 ```
 
-## 3. Caddy
+Abrir `http://localhost:5173` e ingresar con uno de los dos usuarios del juego
+de datos de prueba. La interfaz muestra un aviso en pantalla cuando el backend
+corre en modo memoria, de manera que la condicion nunca queda oculta.
 
-Generar el hash de la contrasena **en el servidor**:
+## 3. Las pruebas
 
 ```bash
-caddy hash-password
+cd backend
+npm test
 ```
 
-Pegar ese hash en [deploy/Caddyfile.fragmento](deploy/Caddyfile.fragmento),
-agregar el bloque al final de `/etc/caddy/Caddyfile`, validar y recargar:
+Tienen que pasar **65 pruebas, 0 fallos**. Es lo mismo que ejecuta la
+integracion continua en cada cambio enviado al repositorio.
+
+## Modo memoria y modo MySQL
+
+El modo se elige con la variable `DB_MODE`:
+
+| Valor | Comportamiento |
+|---|---|
+| `auto` | Intenta conectar a MySQL y, si no puede, sigue en memoria. Es el valor por defecto. |
+| `mysql` | Exige la conexion. Si falla, el servidor no arranca. |
+| `memory` | No intenta conectar. Carga el juego de datos de prueba. |
+
+Para trabajar contra MySQL, crear la base y cargar los datos:
 
 ```bash
-sudo caddy validate --config /etc/caddy/Caddyfile
-sudo systemctl reload caddy
+mysql -u root -p < database/schema.sql
+mysql -u root -p kiosky < database/seed.sql
 ```
 
-En el DNS, `kiosky` apunta a la IP de la EC2, igual que `api-stockarg`.
+Y copiar `backend/.env.example` a `backend/.env` con las credenciales.
 
-## 4. Comprobar que quedo privada
+## Por que la demostracion corre en memoria
 
-```bash
-curl -I https://kiosky.aaronbrumat.com.ar                        # 401
-curl -I -u profesor:LACLAVE https://kiosky.aaronbrumat.com.ar    # 200
-```
+Dos motivos, y el segundo es el que importa para la presentacion:
 
-Si la primera responde 200, el bloque de `basic_auth` no se aplico.
+1. No hace falta tener un servidor MySQL instalado y en funcionamiento, asi que
+   el sistema arranca en cualquier computadora con Node.js y en pocos segundos.
+2. El sistema vuelve al juego de datos inicial en cada reinicio. Eso significa
+   que los valores de referencia documentados en
+   [docs/testing](docs/testing/03-documentacion-tecnica-testing.md) son
+   verificables en cualquier momento: el reporte del dia tiene que dar $14.500
+   con 3 ventas, y el ranking tiene que encabezarlo Chocolate Barra 30g con 11
+   unidades. Un reporte que devuelve algun numero no prueba nada; uno que
+   devuelve el numero esperado, si.
 
-## 5. Actualizar la demo
+El soporte de MySQL permanece intacto, y el trabajo de base de datos de la
+integracion continua lo verifica en cada cambio: levanta un MySQL 8 de cero,
+aplica `schema.sql` y `seed.sql`, arranca la API contra esa base real y
+comprueba que responda y que el catalogo devuelva los 12 productos esperados.
 
-```bash
-cd ~/kiosky && git pull
-docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
-```
+## Empaquetado en contenedor
 
-Y volver a copiar `frontend/dist` si cambio algo del frontend.
-
-## Recursos
-
-La API en memoria usa unos 22 MB. El contenedor tiene un limite de 160 MB
-para que un error no la haga crecer y afecte a las otras aplicaciones.
-
-## Si alguna vez se publica
-
-`frontend/wrangler.jsonc` quedo preparado para servir el frontend desde
-Cloudflare Workers, como hace StockARG. En ese caso el frontend y la API
-pasan a vivir en dominios distintos: hay que compilar con `VITE_API_URL`
-apuntando a la API y quitar el `basic_auth`, porque no funciona bien con
-peticiones entre origenes.
+La carpeta [deploy/](deploy/) conserva la configuracion para ejecutar el backend
+en un contenedor, con su archivo de composicion y su ejemplo de variables de
+entorno. No es necesaria para la demostracion, y se mantiene en el repositorio
+como alternativa de ejecucion.
