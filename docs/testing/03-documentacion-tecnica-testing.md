@@ -236,7 +236,7 @@ Responsable  : Integrante asignado.
 |---|---|---|---|---|---|---|
 | DEF-001 | 01/09/2026 | CP-CU01-03 | Baja | La confirmacion por codigo de barras dependia unicamente del envio implicito del formulario al presionar Enter. Funciona en un navegador real, pero deja el comportamiento sujeto a una conducta implicita del navegador y dificulta verificarlo de forma automatizada. | Corregido | Aaron Brumat |
 | DEF-002 | 10/09/2026 | Pruebas automatizadas | Media | Un producto cuya fecha de vencimiento es el dia de hoy se informaba como ya vencido. Error de un dia en toda la logica de vencimientos, por comparar una fecha interpretada en UTC contra la medianoche local. | Corregido | Aaron Brumat |
-| DEF-003 | 20/09/2026 | Verificacion contra MySQL | Alta | Las ventas se guardan con el reloj del servidor de base de datos y los reportes se calculan con el reloj de la aplicacion. Si estan en zonas horarias distintas, el reporte del dia no incluye las ventas recientes. | Abierto | Elian Cavenatti |
+| DEF-003 | 20/09/2026 | Verificacion contra MySQL | Alta | Las ventas se guardaban con el reloj del servidor de base de datos y los reportes se calculaban con el reloj de la aplicacion. Si estaban en zonas horarias distintas, el reporte del dia no incluia las ventas recientes. | Corregido | Aaron Brumat |
 
 **Detalle de DEF-001**
 
@@ -323,18 +323,29 @@ Impacto      : Un kiosco que vende de noche veria "0 vendido hoy" en el
                justamente las de mayor venta.
 Alcance      : Solo afecta al modo MySQL. En modo memoria los datos y los
                calculos viven en el mismo proceso, asi que comparten reloj.
-Sugerencia   : Unificar el reloj. La via mas directa es fijar la zona horaria
-               de la conexion a la base al abrir el pool, de modo que NOW() y
-               CURDATE() coincidan con la fecha local de la aplicacion.
-Estado       : Abierto
-Responsable  : Elian Cavenatti (reportes, KIO-05), a coordinar con Leonardo
+Correccion   : Se unifico el reloj. Cada conexion nueva del pool ejecuta
+               SET time_zone con el desfasaje local de la aplicacion, de modo
+               que NOW() y CURDATE() del servidor de base de datos coinciden
+               con la fecha local del proceso. Va en el evento 'connection' y
+               no una sola vez al arrancar, porque el pool abre conexiones
+               nuevas durante toda la ejecucion.
+Verificacion : Se forzo el desfasaje a proposito. Con MySQL arrancado en el
+               huso +09:00 y la aplicacion en el huso local, el reloj de la
+               base marcaba 2026-10-13 06:21 y el de la aplicacion
+               2026-10-12 18:21. Una venta registrada a traves de la API quedo
+               guardada como 2026-10-12 18:21:40, es decir con la fecha de la
+               aplicacion, y el reporte del dia devolvio 1 venta por $1.200.
+               Antes de la correccion el mismo escenario devolvia 0 ventas.
+Estado       : Corregido
+Responsable  : Aaron Brumat
 ```
 
-> La suite automatizada no lo detecta porque corre contra el repositorio en
+> La suite automatizada no lo detectaba porque corre contra el repositorio en
 > memoria, donde no hay dos relojes. La integracion continua tampoco: el
 > runner y el contenedor de MySQL corren los dos en UTC. Aparecio al ejecutar
 > el sistema por primera vez contra una base real desde una maquina en
-> Argentina.
+> Argentina, y por eso la verificacion de la correccion se hizo forzando el
+> desfasaje de forma deliberada.
 
 ---
 
