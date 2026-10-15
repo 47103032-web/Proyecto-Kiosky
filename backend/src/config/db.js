@@ -47,7 +47,7 @@ export async function inicializarBaseDeDatos() {
   } catch (error) {
     if (config.db.mode === 'mysql') {
       throw new Error(
-        No se pudo conectar a MySQL (${config.db.host}:${config.db.port}/${config.db.database}): ${error.message}
+        `No se pudo conectar a MySQL (${config.db.host}:${config.db.port}/${config.db.database}): ${error.message}`
       );
     }
 
