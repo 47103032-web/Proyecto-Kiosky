@@ -6,7 +6,7 @@ Code. Son dos procesos que corren a la vez:
 ```
 navegador  ->  frontend (Vite, puerto 5173)
                    |
-                   +--  /api/*  ->  backend (Express, puerto 3000)
+                   +--  /api/*  ->  backend (Express, puerto 4000)
                                         |
                                         +--  MySQL 8, o juego de datos en memoria
 ```
@@ -30,11 +30,11 @@ npm install
 npm run dev
 ```
 
-Queda escuchando en `http://localhost:3000`. Para comprobar contra que motor
+Queda escuchando en `http://localhost:4000`. Para comprobar contra que motor
 arranco:
 
 ```bash
-curl http://localhost:3000/api/salud
+curl http://localhost:4000/api/salud
 ```
 
 Si no encuentra una base de datos disponible, continua con el juego de datos de
