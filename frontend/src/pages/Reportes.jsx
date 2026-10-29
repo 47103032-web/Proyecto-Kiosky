@@ -4,6 +4,8 @@
  * vendidos, medios de pago y boton Exportar.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { jsPDF } from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
 import { api } from '../api/client.js';
 import Mensaje from '../components/Mensaje.jsx';
 import Indicador from '../components/Indicador.jsx';
@@ -43,31 +45,54 @@ export default function Reportes() {
     consultar();
   }, [consultar]);
 
-  /** Exporta el reporte a CSV, abrible con cualquier planilla de calculo. */
-  function exportar() {
+  const exportar = () => {
     if (!reporte) return;
 
-    const lineas = [
-      ['Reporte de ventas Kiosky'],
-      ['Desde', reporte.desde ?? '-', 'Hasta', reporte.hasta ?? '-'],
-      ['Total vendido', reporte.total_vendido],
-      ['Cantidad de ventas', reporte.cantidad_ventas],
-      ['Ticket promedio', reporte.ticket_promedio],
-      [],
-      ['Medio de pago', 'Cantidad', 'Total'],
-      ...reporte.medios_pago.map((m) => [m.medio_pago, m.cantidad, m.total]),
-      [],
-      ['Producto', 'Unidades', 'Total'],
-      ...reporte.productos.map((p) => [p.nombre, p.cantidad, p.total]),
-    ];
+    const doc = new jsPDF();
 
-    const csv = lineas.map((f) => f.join(';')).join('\n');
-    const enlace = document.createElement('a');
-    enlace.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    enlace.download = `reporte-ventas-${reporte.hasta ?? 'kiosky'}.csv`;
-    enlace.click();
-    URL.revokeObjectURL(enlace.href);
-  }
+    doc.setFontSize(18);
+    doc.text('Reporte de Ventas Kiosky', 14, 20);
+
+    doc.setFontSize(10);
+    doc.text(
+      `Desde: ${reporte.desde ?? '-'}  |  Hasta: ${reporte.hasta ?? '-'}`,
+      14,
+      28
+    );
+
+    autoTable(doc, {
+      startY: 34,
+      head: [['Métrica', 'Valor']],
+      body: [
+        ['Total vendido', `$${reporte.total_vendido ?? 0}`],
+        ['Cantidad de ventas', reporte.cantidad_ventas ?? 0],
+        ['Ticket promedio', `$${reporte.ticket_promedio ?? 0}`],
+      ],
+      theme: 'striped',
+    });
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [['Medio de pago', 'Cantidad', 'Total']],
+      body: (reporte.medios_pago || []).map((m) => [
+        m.medio_pago,
+        m.cantidad,
+        `$${m.total}`,
+      ]),
+    });
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [['Producto', 'Unidades', 'Total']],
+      body: (reporte.productos || []).map((p) => [
+        p.nombre,
+        p.cantidad,
+        `$${p.total}`,
+      ]),
+    });
+
+    doc.save(`reporte-ventas-${reporte.hasta ?? 'kiosky'}.pdf`);
+  };
 
   return (
     <>
@@ -119,7 +144,7 @@ export default function Reportes() {
                 Limpiar fechas
               </button>
               <button className="secundario" onClick={exportar} disabled={!reporte}>
-                Exportar CSV
+                Exportar PDF
               </button>
             </div>
           </div>
